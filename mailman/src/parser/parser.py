@@ -19,7 +19,6 @@ def flatpak_out_parser(text):
     result_set = []
     for app in apps:
         bbb = app.split("\t")
-        print(bbb)
         try:
             result_set.append({"name": bbb[1], "label_name": bbb[0]})
         except:

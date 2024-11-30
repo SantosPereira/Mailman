@@ -1,9 +1,13 @@
 import subprocess
 import json
+from pathlib import Path
 
 from mailman.src.parser.parser import *
 
-def main(output_file: str):
+
+home = Path.home()
+
+def apps_report(output_file):
     commands = [
         {"package-manager":"apt","command":"apt-mark showmanual", "parser": apt_out_parser},
         {"package-manager":"snap","command":"snap list", "parser": snap_out_parser},
@@ -17,9 +21,20 @@ def main(output_file: str):
         del cmd["parser"]
         packages.append(cmd)
 
-
     with open(output_file, "w") as file:
         file.write(json.dumps(packages))
 
 
-    print(packages)
+def environment_report():
+    subprocess.run(f"env > {home}/.backup/environment.env", shell=True, text=True, capture_output=True)
+
+
+def os_package_manager_sources_report():
+    location = "/etc/apt/sources.list.d"
+    subprocess.run(f"cp {location}/* {home}/.backup/apt/sources", shell=True, text=True, capture_output=True)
+
+
+def main(output_file: str):
+    apps_report(output_file)
+    environment_report()
+    os_package_manager_sources_report()

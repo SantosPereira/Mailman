@@ -10,7 +10,7 @@ Path(f"{home}/.backup").mkdir(parents=True, exist_ok=True)
 @click.command()
 @click.option('-s', '--output', 'output', required=False, default=f"{home}/.backup/apps.json")
 def run(output):
-    # """Simple program that greets NAME for a total of COUNT times."""
+    """Export system configurations about packages and environment variables"""
     main(output_file=output)
 
 

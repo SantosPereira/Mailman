@@ -34,7 +34,11 @@ def os_package_manager_sources_report():
     subprocess.run(f"cp {location}/* {home}/.backup/apt/sources", shell=True, text=True, capture_output=True)
 
 
-def main(output_file: str):
+def export(output_file: str):
     apps_report(output_file)
     environment_report()
     os_package_manager_sources_report()
+
+
+def __import(source):
+    pass

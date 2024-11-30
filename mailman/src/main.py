@@ -34,10 +34,15 @@ def os_package_manager_sources_report():
     subprocess.run(f"cp {location}/* {home}/.backup/apt/sources", shell=True, text=True, capture_output=True)
 
 
+def dotfiles_backup():
+    subprocess.run(f"cp -r {home}/.dotfiles/* {home}/.backup/dotfiles", shell=True, text=True, capture_output=True)
+
+
 def export(output_file: str):
     apps_report(output_file)
     environment_report()
     os_package_manager_sources_report()
+    dotfiles_backup()
 
 
 def __import(source):

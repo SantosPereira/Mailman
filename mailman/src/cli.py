@@ -1,5 +1,5 @@
 import click
-from mailman.src.main import export, __import
+from mailman.src.main import export, __import, save_dotfile
 from pathlib import Path
 
 
@@ -22,9 +22,16 @@ def __import(source):
 
 @cli.command()
 @click.option('-s', '--output', 'output', required=False, default=f"{home}/.backup/apps.json")
-def Export(output):
+def export(output):
     """Export system configurations about packages and environment variables"""
     export(output_file=output)
+
+
+@cli.command()
+@click.argument('dotfile', required=True)
+def dotfile(dotfile):
+    """Create a symlink of a dotfile, storing the source at a common place"""
+    save_dotfile(file=dotfile)
 
 
 if __name__ == '__main__':

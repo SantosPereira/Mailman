@@ -30,12 +30,17 @@ def environment_report():
 
 
 def os_package_manager_sources_report():
+    Path(f"{home}/.backup/apt/sources").mkdir(parents=True, exist_ok=True)
     location = "/etc/apt/sources.list.d"
     subprocess.run(f"cp {location}/* {home}/.backup/apt/sources", shell=True, text=True, capture_output=True)
 
 
 def dotfiles_backup():
+    Path(f"{home}/.backup/dotfiles").mkdir(parents=True, exist_ok=True)
     subprocess.run(f"cp -r {home}/.dotfiles/* {home}/.backup/dotfiles", shell=True, text=True, capture_output=True)
+
+
+# ---------------------------------------------------------------------------------------------------------- #
 
 
 def export(output_file: str):
@@ -47,3 +52,12 @@ def export(output_file: str):
 
 def __import(source):
     pass
+
+
+def save_dotfile(file):
+    Path(f"{home}/.backup/dotfiles").mkdir(parents=True, exist_ok=True)
+    slash_pos = file.find("/")
+    if slash_pos == -1:
+        slash_pos = 0
+    subprocess.run(f"mv {file} {home}/.backup/dotfiles", shell=True, text=True, capture_output=True)
+    subprocess.run(f"ln -s {home}/.backup/dotfiles/{file[slash_pos:]} {file}", shell=True, text=True, capture_output=True)

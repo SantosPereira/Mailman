@@ -80,8 +80,15 @@ def __import(source):
 
 def centralize_dotfiles(file):
     Path(f"{home}/.dotfiles").mkdir(parents=True, exist_ok=True)
-    slash_pos = file.find("/")
+    Path(f"{home}/.dotfiles/manifest").mkdir(parents=True, exist_ok=True)
+    slash_pos = file.rfind("/")
     if slash_pos == -1:
         slash_pos = 0
+    file_name = file[slash_pos+1:]
     subprocess.run(f"mv {file} {home}/.dotfiles", shell=True, text=True, capture_output=True)
-    subprocess.run(f"ln -s {home}/.dotfiles/{file[slash_pos:]} {file}", shell=True, text=True, capture_output=True)
+    subprocess.run(f"ln -s {home}/.dotfiles/{file_name} {file}", shell=True, text=True, capture_output=True)
+
+    with open(f"{home}/.dotfiles/manifest/{file_name}.path", "w") as foo:
+        foo.write(file)
+
+

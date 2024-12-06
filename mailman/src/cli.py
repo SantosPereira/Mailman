@@ -1,5 +1,5 @@
 import click
-from mailman.src.main import __export, __import, centralize_dotfiles
+from mailman.src.main import __export, import_config, centralize_dotfiles
 from pathlib import Path
 
 
@@ -16,17 +16,17 @@ def cli():
 
 
 @cli.command("import")
-@click.argument('source', required=True, default=f"{home}/.backup")
-def __import(source):
+@click.argument('source', required=True)
+def import_from_zip(source):
     """Import previous system configuration backup"""
-    __import(source=source)
+    import_config(source)
 
 
 @cli.command()
 @click.option('-s', '--output', 'output', required=False, default=f"{temp_dir}/apps.json")
 def export(output):
     """Export system configurations about packages and environment variables"""
-    __export(output_file=output)
+    __export(output)
 
 
 @cli.command()

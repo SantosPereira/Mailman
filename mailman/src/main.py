@@ -48,11 +48,23 @@ def export_to_zip():
     import zipfile
     import time
     import os
+    import distro
+    import json
 
-    arquivo = f"os_config_backup_{time.time()}.zip"
+    current_time = time.time()
+    arquivo = f"{os.uname().nodename}_{distro.id()}_{distro.version()}_os_config_backup_{current_time}.zip"
 
     zip_file_path = f"{final_dir}/{arquivo}"
     folder_path = f"{temp_dir}"
+
+    with open(f"{temp_dir}/manifest", "w") as foo:
+        infos = {
+            "hostname": os.uname().nodename,
+            "os_name": distro.id(),
+            "os_version": distro.version(),
+            "export_creation_time": current_time
+        }
+        foo.write(json.dumps(infos))
 
     with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(folder_path):
@@ -74,12 +86,15 @@ def __export(output_file: str):
     export_to_zip()
 
 
-def __import(source):
-    pass
+def import_config(source):
+    Path(f"{home}/.backup").mkdir(parents=True, exist_ok=True)
+    import zipfile
+
+    with zipfile.ZipFile(source, 'r') as zip_ref:
+        zip_ref.extractall(f"{home}/.backup")
 
 
 def centralize_dotfiles(file):
-    Path(f"{home}/.dotfiles").mkdir(parents=True, exist_ok=True)
     Path(f"{home}/.dotfiles/manifest").mkdir(parents=True, exist_ok=True)
     slash_pos = file.rfind("/")
     if slash_pos == -1:

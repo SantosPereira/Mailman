@@ -1,11 +1,13 @@
 import click
-from mailman.src.main import export, __import, save_dotfile
+from mailman.src.main import __export, __import, centralize_dotfiles
 from pathlib import Path
 
 
 home = Path.home()
 
-Path(f"{home}/.backup").mkdir(parents=True, exist_ok=True)
+temp_dir = "/tmp/mailman"
+
+Path(f"{temp_dir}").mkdir(parents=True, exist_ok=True)
 
 @click.group()
 def cli():
@@ -21,17 +23,17 @@ def __import(source):
 
 
 @cli.command()
-@click.option('-s', '--output', 'output', required=False, default=f"{home}/.backup/apps.json")
+@click.option('-s', '--output', 'output', required=False, default=f"{temp_dir}/apps.json")
 def export(output):
     """Export system configurations about packages and environment variables"""
-    export(output_file=output)
+    __export(output_file=output)
 
 
 @cli.command()
 @click.argument('dotfile', required=True)
 def dotfile(dotfile):
     """Create a symlink of a dotfile, storing the source at a common place"""
-    save_dotfile(file=dotfile)
+    centralize_dotfiles(file=dotfile)
 
 
 if __name__ == '__main__':

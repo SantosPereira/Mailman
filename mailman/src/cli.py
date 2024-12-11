@@ -20,6 +20,7 @@ def cli():
 def import_from_zip(source):
     """Import previous system configuration backup"""
     import_config(source)
+    # pass
 
 
 @cli.command()

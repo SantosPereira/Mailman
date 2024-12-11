@@ -29,19 +29,19 @@ def apps_report(output_file):
         file.write(json.dumps(packages))
 
 
-def environment_report():
-    subprocess.run(f"env > {temp_dir}/environment.env", shell=True, text=True, capture_output=True)
+# def environment_report():
+#     subprocess.run(f"cat > {temp_dir}/environment.env", shell=True, text=True, capture_output=True)
 
 
 def os_package_manager_sources_report():
     Path(f"{temp_dir}/apt/sources").mkdir(parents=True, exist_ok=True)
     location = "/etc/apt/sources.list.d"
-    subprocess.run(f"cp {location}/* {temp_dir}/apt/sources", shell=True, text=True, capture_output=True)
+    command_executor(f"cp {location}/* {temp_dir}/apt/sources")
 
 
 def dotfiles_backup():
     Path(f"{temp_dir}/dotfiles").mkdir(parents=True, exist_ok=True)
-    subprocess.run(f"cp -r {home}/.dotfiles/* {temp_dir}/dotfiles", shell=True, text=True, capture_output=True)
+    command_executor(f"cp -r {home}/.dotfiles/. {temp_dir}/dotfiles")
 
 
 def export_to_zip():
@@ -52,9 +52,9 @@ def export_to_zip():
     import json
 
     current_time = time.time()
-    arquivo = f"{os.uname().nodename}_{distro.id()}_{distro.version()}_os_config_backup_{current_time}.zip"
+    file = f"{os.uname().nodename}_{distro.id()}_{distro.version()}_os_config_backup_{current_time}.zip"
 
-    zip_file_path = f"{final_dir}/{arquivo}"
+    zip_file_path = f"{final_dir}/{file}"
     folder_path = f"{temp_dir}"
 
     with open(f"{temp_dir}/manifest", "w") as foo:
@@ -72,6 +72,7 @@ def export_to_zip():
                 file_path = os.path.join(root, file)
                 arcname = os.path.relpath(file_path, folder_path)
                 zipf.write(file_path, arcname)
+    command_executor(f'rm -rf {folder_path}')
 
 
 def extract_backup(source):
@@ -83,68 +84,73 @@ def extract_backup(source):
 
 
 def load_env(path):
-    with open(path+"/environment.env", "r") as foo:
+    with open(path+"/dotfiles/.environment.env", "r") as foo:
         env_vars = foo.read()
-    subprocess.run(f'echo "{env_vars}" >> /etc/environment', shell=True, text=True, capture_output=True)
-    subprocess.run(f"sed 's/^/export /' /etc/environment > /tmp/env.sh && source /tmp/env.sh", shell=True, text=True, capture_output=True)
+    command_executor(f'echo "{env_vars}" >> /etc/environment')
+    command_executor(f"sed 's/^/export /' /etc/environment > /tmp/env.sh && chmod +x /tmp/env.sh && /tmp/env.sh")
+
+def command_executor(command):
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,  
+        text=True,
+        shell=True                
+    )
+    for line in process.stdout:
+        print(line, end="")  
+    process.wait()
 
 
 def load_apps(path):
     import json
 
     apps_list = json.load(open(path+'/apps.json', "r"))
-
     install_list = ""
 
     for i in apps_list:
         if i['package-manager'] == 'apt':
             for j in i['apps']:
                 install_list += f"{j['name']} "
-            
-            subprocess.run(f'{i["importer"]} {install_list}', shell=True, text=True, capture_output=True)
+            command_executor(f'{i["importer"]} {install_list}')
             install_list = ""
         
         elif i['package-manager'] == 'flatpak':
             for k in i['apps']:
                 install_list += f"{k['name']} "
-            
-            subprocess.run(f'{i["importer"]} {install_list}', shell=True, text=True, capture_output=True)
+            command_executor(f'{i["importer"]} {install_list}')
             install_list = ""
         
         elif i['package-manager'] == 'snap':
             for l in i['apps']:
                 install_list += f"{l['name']} "
-            
-            subprocess.run(f'{i["importer"]} {install_list}', shell=True, text=True, capture_output=True)
+            command_executor(f'{i["importer"]} {install_list}')
             install_list = ""
     
 
 def load_sources_apt(path):
-    subprocess.run(f'mv {path}/apt/sources/* /etc/apt/sources.list.d', shell=True, text=True, capture_output=True)
-    subprocess.run(f'apt update', shell=True, text=True, capture_output=True)
+    command_executor(f'mv {path}/apt/sources/* /etc/apt/sources.list.d')
+    command_executor(f'apt update')
 
 
 def restore_dotfiles(path):
     from pathlib import Path
     Path(f"{home}/.dotfiles").mkdir(parents=True, exist_ok=True)
-    subprocess.run(f'mv {path}/dotfiles/* {home}/.dotfiles', shell=True, text=True, capture_output=True)
-
+    command_executor(f'cp -r {path}/dotfiles/. {home}/.dotfiles')
+    command_executor(f'rm -rf {path}/dotfiles')
 
     pasta_dotfiles = Path(f'{home}/.dotfiles')
-
-    dotfiles = [arquivo for arquivo in pasta_dotfiles.iterdir() if arquivo.is_file()]
+    dotfiles = [file for file in pasta_dotfiles.iterdir() if file.is_file()]
 
     import re
     padrao = r'^/home/([a-zA-Z0-9_]+)'
 
     for i in range(len(dotfiles)):
-        with open(f"{home}/dotfiles/manifest/{dotfiles[i].name}.path") as foo:
+        with open(f"{home}/.dotfiles/manifest/{dotfiles[i].name}.path") as foo:
             destino = foo.read()
-        
         match = re.match(padrao, destino)
         if match:
             destino = f"{home}{destino[match.end(1):]}"
-        
         decentralize_dotfiles(dotfiles[i], destino)
 
 
@@ -155,12 +161,9 @@ def decentralize_dotfiles(file, destine):
     destine_path = destine[:slash_pos]
     Path(f"{destine_path}").mkdir(parents=True, exist_ok=True)
     Path(f"{home}/.dotfiles/manifest/").mkdir(parents=True, exist_ok=True)
-   
-    subprocess.run(f"mv {file} {home}/.dotfiles", shell=True, text=True, capture_output=True)
-    subprocess.run(f"ln -s {home}/.dotfiles {destine}", shell=True, text=True, capture_output=True)
-
+    command_executor(f"ln -s {home}/.dotfiles {destine}")
     with open(f"{home}/.dotfiles/manifest/{file.name}.path", "w") as foo:
-        foo.write(file)
+        foo.write(str(file))
 
 
 # ---------------------------------------------------------------------------------------------------------- #
@@ -168,7 +171,7 @@ def decentralize_dotfiles(file, destine):
 
 def __export(output_file: str):
     apps_report(output_file)
-    environment_report()
+    # environment_report()
     os_package_manager_sources_report()
     dotfiles_backup()
     export_to_zip()
@@ -188,8 +191,9 @@ def centralize_dotfiles(file):
     if slash_pos == -1:
         slash_pos = 0
     file_name = file[slash_pos+1:]
-    subprocess.run(f"mv {file} {home}/.dotfiles", shell=True, text=True, capture_output=True)
-    subprocess.run(f"ln -s {home}/.dotfiles/{file_name} {file}", shell=True, text=True, capture_output=True)
+
+    command_executor(f"mv {file} {home}/.dotfiles")
+    command_executor(f"ln -s {home}/.dotfiles/{file_name} {file}")
 
     with open(f"{home}/.dotfiles/manifest/{file_name}.path", "w") as foo:
         foo.write(file)
